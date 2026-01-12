@@ -70,3 +70,16 @@ steps:
       azureSubscription: $(azureSubscription)
       appName: $(webAppName)
       package: $(Build.ArtifactStagingDirectory)/app.zip
+
+  # Set Flask startup command (avoids Deployment Center placeholder)
+  - task: AzureCLI@2
+    displayName: Set Flask Startup Command
+    inputs:
+      azureSubscription: $(azureSubscription)
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        az webapp config set \
+          --resource-group $(resourceGroup) \
+          --name $(webAppName) \
+          --startup-file "gunicorn app:app"
