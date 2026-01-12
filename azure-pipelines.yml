@@ -7,6 +7,9 @@ pool:
 variables:
   pythonVersion: '3.10'
   azureSubscription: 'Azure-Service-Connection'
+  resourceGroup: 'my-resource-group'
+  location: 'eastasia'
+  appServicePlan: 'my-appservice-plan'
   webAppName: 'my-python-webapp'
 
 steps:
@@ -16,11 +19,42 @@ steps:
     inputs:
       versionSpec: $(pythonVersion)
 
+  # Create App Service Plan (Linux)
+  - task: AzureCLI@2
+    displayName: Create App Service Plan
+    inputs:
+      azureSubscription: $(azureSubscription)
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        az appservice plan create \
+          --name $(appServicePlan) \
+          --resource-group $(resourceGroup) \
+          --location $(location) \
+          --sku B1 \
+          --is-linux
+
+  # Create Web App (Python runtime)
+  - task: AzureCLI@2
+    displayName: Create Web App
+    inputs:
+      azureSubscription: $(azureSubscription)
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        az webapp create \
+          --resource-group $(resourceGroup) \
+          --plan $(appServicePlan) \
+          --name $(webAppName) \
+          --runtime "PYTHON|3.10"
+
+  # Install dependencies locally for zip deploy
   - script: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt --target=site-packages
     displayName: Install dependencies
 
+  # Zip the app
   - task: ArchiveFiles@2
     displayName: Create deployment package
     inputs:
@@ -28,8 +62,8 @@ steps:
       includeRootFolder: false
       archiveType: zip
       archiveFile: $(Build.ArtifactStagingDirectory)/app.zip
-      replaceExistingArchive: true
 
+  # Deploy to Web App
   - task: AzureWebApp@1
     displayName: Deploy to Azure Web App
     inputs:
