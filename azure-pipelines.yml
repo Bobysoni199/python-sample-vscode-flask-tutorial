@@ -1,0 +1,38 @@
+trigger:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  pythonVersion: '3.10'
+  azureSubscription: 'Azure-Service-Connection'
+  webAppName: 'my-python-webapp'
+
+steps:
+  - checkout: self
+
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: $(pythonVersion)
+
+  - script: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt --target=site-packages
+    displayName: Install dependencies
+
+  - task: ArchiveFiles@2
+    displayName: Create deployment package
+    inputs:
+      rootFolderOrFile: $(System.DefaultWorkingDirectory)
+      includeRootFolder: false
+      archiveType: zip
+      archiveFile: $(Build.ArtifactStagingDirectory)/app.zip
+      replaceExistingArchive: true
+
+  - task: AzureWebApp@1
+    displayName: Deploy to Azure Web App
+    inputs:
+      azureSubscription: $(azureSubscription)
+      appName: $(webAppName)
+      package: $(Build.ArtifactStagingDirectory)/app.zip
