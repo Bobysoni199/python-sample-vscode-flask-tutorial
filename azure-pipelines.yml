@@ -10,7 +10,7 @@ variables:
   resourceGroup: 'python-webapp'
   location: 'eastasia'
   appServicePlan: 'my-appservice-plan'
-  webAppName: 'my-python-webapp'
+  webAppName: 'my-python-webapp1'
 
 steps:
   - checkout: self
